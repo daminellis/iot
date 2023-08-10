@@ -1,0 +1,34 @@
+const int pinpot = A0;     
+const int pinver = 11;     
+const int pinverde = 10;   
+const int pinazul = 9;  
+
+void setup() {
+  pinMode(pinver, OUTPUT);
+  pinMode(pinverde, OUTPUT);
+  pinMode(pinazul, OUTPUT);
+}
+
+void loop() {
+  int valorsensor = analogRead(pinpot); 
+  float tensao = valorsensor * (5.0 / 1023.0);
+
+  
+  if (tensao < 0.5) {
+    digitalWrite(pinver, LOW);
+    digitalWrite(pinverde, LOW);
+    digitalWrite(pinazul, HIGH);  
+  } else if (tensao <= 4.5) {
+    digitalWrite(pinver, LOW);
+    digitalWrite(pinverde, HIGH);  
+    digitalWrite(pinazul, LOW);
+  } else {
+    digitalWrite(pinver, HIGH);    
+    digitalWrite(pinverde, LOW);
+    digitalWrite(pinazul, LOW);
+  }
+}
+=========================================================================================================================
+=========================================================================================================================
+
+exercicio 2
