@@ -243,6 +243,38 @@ void loop() {
 }
 =========================================================================================================================
 =========================================================================================================================
+#include <Ultrasonic.h>
+Ultrasonic ultrasonic(12, 13);
+#define ledpin1 6
+#define ledpin2 5
+int distance;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(ledpin1, OUTPUT);
+  pinMode(ledpin2, OUTPUT);
+}
+
+void loop() {
+  distance = ultrasonic.read();
+  
+  Serial.print("Distance in CM: ");
+  Serial.println(distance);
+  
+  int brightness1 = map(distance, 20, 10, 255, 0);  
+  int brightness2 = map(distance, 9, 0, 255, 0);  
+  
+  brightness1 = constrain(brightness1, 0, 255);
+  brightness2 = constrain(brightness2, 0, 255);
+ 
+  analogWrite(ledpin1, brightness1);
+  
+  if (distance <= 9) {
+    analogWrite(ledpin2, brightness2);  
+  } else {
+    analogWrite(ledpin2, 0); 
+  }
+}
 
 =========================================================================================================================
 =========================================================================================================================
