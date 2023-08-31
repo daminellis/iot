@@ -1,0 +1,21 @@
+A máquina é uma separadora/contadora de peças e sua programação, com Arduino,
+funciona da seguinte forma:
+• Uma entrada de peças é realizada de forma automática por um alimentador vertical
+• Para iniciar o processo, a esteira M1 é ligada, nível lógico 0 esteira está parada, nível
+lógico 1 se movendo.
+• Um Servomotor empurra as peças do alimentador para cima da esteira, posição 0 º
+é a de descanso, posição 90 º coloca a peça na esteira.
+• No meio da esteira tem um sensor que mede a altura das peças. As peças são
+divididas em dois grupos:
+◦ Peças pequenas, que tem altura máxima de 15 cm;
+◦ Peças grandes, que são maiores que 16 cm e com altura máxima de 30 cm;
+◦ O sensor está posicionado a 45 cm da esteira, apontado para baixo.
+• Ao final da esteira, as peças devem ser colocadas em suas respectivas caixas de
+armazenamento. Um posicionador utilizando servomotor direciona as peças para
+suas respectivas caixas.
+◦ Posição de descanso deste posicionador é 90 º.
+◦ Para direcionar as peças pequenas, o posicionador vai para 120 º.
+◦ Para direcionar as peças grandes, o posicionador vai para 60 º.
+• Na entrada de cada caixa de armazenamento tem um sensor que realiza a contagem
+de peças esta contagem deve ser atualizada e apresentada no Monitor Seria toda
+vez que uma peça é armazenada.
