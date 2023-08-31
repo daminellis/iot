@@ -306,6 +306,50 @@ void loop() {
 }
 
 =========================================================================================================================
+#include <Servo.h>
+
+// Pin definitions
+const int servoPushPin = 9;
+const int conveyorM1Pin = 10;
+const int heightSensorPin = A0;  // Analog pin for height sensor
+const int smallPieceBoxPin = 11; // Pin for sensor detecting small piece box
+const int largePieceBoxPin = 12; // Pin for sensor detecting large piece box
+
+Servo servoPush;
+
+void setup() {
+  pinMode(conveyorM1Pin, OUTPUT);
+  pinMode(smallPieceBoxPin, INPUT_PULLUP);
+  pinMode(largePieceBoxPin, INPUT_PULLUP);
+  servoPush.attach(servoPushPin);
+  digitalWrite(conveyorM1Pin, HIGH);
+  Serial.begin(9600);
+}
+
+void loop() {
+  servoPush.write(90);
+  delay(1000);
+  servoPush.write(0);
+
+  // Read height sensor
+  int sensorValue = analogRead(heightSensorPin);
+  if (sensorValue <= 150) {  // Assuming small pieces have lower readings
+    servoPush.write(120);    // Position for small pieces
+  } else if (sensorValue > 150 && sensorValue <= 300) {  // Assuming large pieces have higher readings
+    servoPush.write(60);     // Position for large pieces
+  }
+  delay(1000);              // Allow time for the piece to move to the positioning area
+  servoPush.write(90);      // Return servo to resting position
+
+  // Detect and count pieces in the storage boxes
+  if (digitalRead(smallPieceBoxPin) == LOW) {
+    Serial.println("Small piece stored.");
+  }
+  if (digitalRead(largePieceBoxPin) == LOW) {
+    Serial.println("Large piece stored.");
+  }
+}
+
 
 =========================================================================================================================
 =========================================================================================================================
