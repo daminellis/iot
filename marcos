@@ -277,6 +277,34 @@ void loop() {
 }
 
 =========================================================================================================================
+#include <Servo.h>
+
+// Pin definitions
+const int servoPushPin = 9;  // Pin for the servo that pushes pieces onto the conveyor
+const int conveyorM1Pin = 10;  // Pin for controlling the conveyor M1
+
+Servo servoPush;  // Servo object for the pushing mechanism
+
+void setup() {
+  // Initialize pins
+  pinMode(conveyorM1Pin, OUTPUT);
+
+  // Attach servo
+  servoPush.attach(servoPushPin);
+
+  // Start conveyor
+  digitalWrite(conveyorM1Pin, HIGH);
+}
+
+void loop() {
+  // Push a piece onto the conveyor
+  servoPush.write(90);  // Move the servo to the position that pushes the piece onto the conveyor
+  delay(1000);          // Wait for the piece to be placed on the conveyor
+  servoPush.write(0);   // Return the servo to the resting position
+
+  // Continue with the next piece
+}
+
 =========================================================================================================================
 
 =========================================================================================================================
