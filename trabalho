@@ -23,81 +23,6 @@ vez que uma peça é armazenada.
 ==================================================================================
 #include <Servo.h>
 #include <Ultrasonic.h>
-Ultrasonic altura(12, 13);
-int altura;
-const int sensor;
-int val;
-
-Servo servo1;
-Servo servo2;
-
-const int botaoP = 2;
-const int botaoG = 3;
-const int alarme = 4;
-const int rset   = 5;
-const int led    = 7;
-
-int contadorPequenas = 0;
-int contadorGrandes = 0;
-
-int alturaMaximaPequenas = 15;
-int alturaMaximaGrandes = 30;
-
-Servo servoPush;
-
-void setup() {
-  servo1.attach(10); 
-  servo2.attach(9); 
-  pinMode(botaoP, INPUT);
-  pinMode(botaoG, INPUT);
-  pinMode(alarme, INPUT);
-  pinMode(rset,   INPUT);
-  pinMode(led ,  OUTPUT);
-}
-
-void loop() {
-  altura = ultrasonic.read();
-  val = analogRead(potpin);
-
-  if (alarme == LOW){
-    digitalWrite(led, HIGH)
-  }
-  else if (alarme == HIGH){
-    digitalWrite(led,LOW)
-  
-  for (pos = 0; pos <= 90; pos += 1) { // goes from 0 degrees to 90 degrees
-    servo1.write(pos);              // tell servo to go to position in variable 'pos'
-    delay(15);                       // waits 15 ms for the servo to reach the position
-  }
-
-  if (altura <= alturaMaximaPequenas) {
-    servo2.write(120);
-  } else if (altura <= alturaMaximaGrandes) {
-    servo2.write(60);
-  }
-  
-  // Verifica o sensor da caixa e atualiza o contador
-  if (digitalRead(botaoP) == HIGH) {
-    contadorPequenas++;
-  }
-  else if (digitalRead(botaoG) == HIGH {
-    contadorGrandes++;
-  }
-  
-  // Retorna alimentador à posição inicial
-  servo2.write(90);
-  
-  // Atualiza o monitor serial com a contagem
-  Serial.print("Peças Pequenas: ");
-  Serial.println(contadorPequenas);
-  Serial.print("Peças Grandes: ");
-  Serial.println(contadorGrandes);
-}
-}
-
-lllllllll
-#include <Servo.h>
-#include <Ultrasonic.h>
 Ultrasonic distancia(12, 13);
 int distanciaSensor;
 const int sensor = A0;
@@ -139,7 +64,7 @@ void loop() {
     digitalWrite(led, LOW);
   }
 
-  for (int pos = 0; pos <= 90; pos += 1) {
+  for (int pos = 0; pos <= 90;) {
     servo1.write(pos);
     delay(15);
   }
@@ -163,4 +88,3 @@ void loop() {
   Serial.print("Pecas Grandes: ");
   Serial.println(contadorGrandes);
 }
-
