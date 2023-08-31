@@ -62,3 +62,59 @@ void loop() {
     Serial.println("Large piece stored.");
   }
 }
+@$@$@@@
+#include <Servo.h>
+
+Servo servoAlimentador;
+Servo servoPosicionador;
+
+const int sensorAlturaPin = A0;
+const int sensorCaixaPin = 2;
+
+int alturaMaximaPequenas = 15;
+int alturaMaximaGrandes = 30;
+
+int contadorPequenas = 0;
+int contadorGrandes = 0;
+
+void setup() {
+  servoAlimentador.attach(9);
+  servoPosicionador.attach(10);
+  
+  pinMode(sensorCaixaPin, INPUT);
+  
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Verifica o sensor de altura
+  int altura = analogRead(sensorAlturaPin);
+  
+  // Verifica se é uma peça pequena ou grande
+  if (altura <= alturaMaximaPequenas) {
+    contadorPequenas++;
+    servoPosicionador.write(120);
+  } else if (altura <= alturaMaximaGrandes) {
+    contadorGrandes++;
+    servoPosicionador.write(60);
+  }
+  
+  // Verifica o sensor da caixa e atualiza o contador
+  if (digitalRead(sensorCaixaPin) == HIGH) {
+    contadorPequenas = 0;
+    contadorGrandes = 0;
+  }
+  
+  // Movimenta a esteira e alimentador
+  servoAlimentador.write(90); // Coloca a peça na esteira
+  delay(1000); // Aguarda 1 segundo para a peça avançar
+  
+  // Retorna alimentador à posição inicial
+  servoAlimentador.write(0);
+  
+  // Atualiza o monitor serial com a contagem
+  Serial.print("Peças Pequenas: ");
+  Serial.println(contadorPequenas);
+  Serial.print("Peças Grandes: ");
+  Serial.println(contadorGrandes);
+}
