@@ -1,3 +1,4 @@
+
 A máquina é uma separadora/contadora de peças e sua programação, com Arduino,
 funciona da seguinte forma:
 • Uma entrada de peças é realizada de forma automática por um alimentador vertical
@@ -19,3 +20,45 @@ suas respectivas caixas.
 • Na entrada de cada caixa de armazenamento tem um sensor que realiza a contagem
 de peças esta contagem deve ser atualizada e apresentada no Monitor Seria toda
 vez que uma peça é armazenada.
+==================================================================================
+#include <Servo.h>
+
+const int servoPushPin = 9;
+const int conveyorM1Pin = 10;
+const int heightSensorPin = A0;  
+const int smallPieceBoxPin = 11; 
+const int largePieceBoxPin = 12; 
+
+Servo servoPush;
+
+void setup() {
+  pinMode(conveyorM1Pin, OUTPUT);
+  pinMode(smallPieceBoxPin, INPUT_PULLUP);
+  pinMode(largePieceBoxPin, INPUT_PULLUP);
+  servoPush.attach(servoPushPin);
+  digitalWrite(conveyorM1Pin, HIGH);
+  Serial.begin(9600);
+}
+
+void loop() {
+  servoPush.write(90);
+  delay(1000);
+  servoPush.write(0);
+
+  // Read height sensor
+  int sensorValue = analogRead(heightSensorPin);
+  if (sensorValue <= 150) {  
+    servoPush.write(120);    
+  } else if (sensorValue > 150 && sensorValue <= 300) { 
+    servoPush.write(60);    
+  }
+  delay(1000);              
+  servoPush.write(90);      
+
+  if (digitalRead(smallPieceBoxPin) == LOW) {
+    Serial.println("Small piece stored.");
+  }
+  if (digitalRead(largePieceBoxPin) == LOW) {
+    Serial.println("Large piece stored.");
+  }
+}
