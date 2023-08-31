@@ -22,99 +22,75 @@ de peças esta contagem deve ser atualizada e apresentada no Monitor Seria toda
 vez que uma peça é armazenada.
 ==================================================================================
 #include <Servo.h>
+#include <Ultrasonic.h>
+Ultrasonic altura(12, 13);
+int altura;
+const int sensor;
+int val;
 
-const int servoPushPin = 9;
-const int conveyorM1Pin = 10;
-const int heightSensorPin = A0;  
-const int smallPieceBoxPin = 11; 
-const int largePieceBoxPin = 12; 
+Servo servo1;
+Servo servo2;
 
-Servo servoPush;
-
-void setup() {
-  pinMode(conveyorM1Pin, OUTPUT);
-  pinMode(smallPieceBoxPin, INPUT_PULLUP);
-  pinMode(largePieceBoxPin, INPUT_PULLUP);
-  servoPush.attach(servoPushPin);
-  digitalWrite(conveyorM1Pin, HIGH);
-  Serial.begin(9600);
-}
-
-void loop() {
-  servoPush.write(90);
-  delay(1000);
-  servoPush.write(0);
-
-  // Read height sensor
-  int sensorValue = analogRead(heightSensorPin);
-  if (sensorValue <= 150) {  
-    servoPush.write(120);    
-  } else if (sensorValue > 150 && sensorValue <= 300) { 
-    servoPush.write(60);    
-  }
-  delay(1000);              
-  servoPush.write(90);      
-
-  if (digitalRead(smallPieceBoxPin) == LOW) {
-    Serial.println("Small piece stored.");
-  }
-  if (digitalRead(largePieceBoxPin) == LOW) {
-    Serial.println("Large piece stored.");
-  }
-}
-@$@$@@@
-#include <Servo.h>
-
-Servo servoAlimentador;
-Servo servoPosicionador;
-
-const int sensorAlturaPin = A0;
-const int sensorCaixaPin = 2;
-
-int alturaMaximaPequenas = 15;
-int alturaMaximaGrandes = 30;
+const int botaoP = 2;
+const int botaoG = 3;
+const int alarme = 4;
+const int rset   = 5;
+const int led    = 7;
 
 int contadorPequenas = 0;
 int contadorGrandes = 0;
 
+int alturaMaximaPequenas = 15;
+int alturaMaximaGrandes = 30;
+
+Servo servoPush;
+
 void setup() {
-  servoAlimentador.attach(9);
-  servoPosicionador.attach(10);
-  
-  pinMode(sensorCaixaPin, INPUT);
-  
-  Serial.begin(9600);
+  servo1.attach(10); 
+  servo2.attach(9); 
+  pinMode(botaoP, INPUT);
+  pinMode(botaoG, INPUT);
+  pinMode(alarme, INPUT);
+  pinMode(rset,   INPUT);
+  pinMode(led ,  OUTPUT);
 }
 
 void loop() {
-  // Verifica o sensor de altura
-  int altura = analogRead(sensorAlturaPin);
+  altura = ultrasonic.read();
+  val = analogRead(potpin);
+
+  if (alarme == LOW){
+    digitalWrite(led, HIGH)
+  }
+  else if (alarme == HIGH){
+    digitalWrite(led,LOW)
   
-  // Verifica se é uma peça pequena ou grande
+  for (pos = 0; pos <= 90; pos += 1) { // goes from 0 degrees to 90 degrees
+    servo1.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15 ms for the servo to reach the position
+  }
+
   if (altura <= alturaMaximaPequenas) {
-    contadorPequenas++;
-    servoPosicionador.write(120);
+    servo2.write(120);
   } else if (altura <= alturaMaximaGrandes) {
-    contadorGrandes++;
-    servoPosicionador.write(60);
+    servo2.write(60);
   }
   
   // Verifica o sensor da caixa e atualiza o contador
-  if (digitalRead(sensorCaixaPin) == HIGH) {
-    contadorPequenas = 0;
-    contadorGrandes = 0;
+  if (digitalRead(botaoP) == HIGH) {
+    contadorPequenas++;
+  }
+  else if (digitalRead(botaoG) == HIGH {
+    contadorGrandes++;
   }
   
-  // Movimenta a esteira e alimentador
-  servoAlimentador.write(90); // Coloca a peça na esteira
-  delay(1000); // Aguarda 1 segundo para a peça avançar
-  
   // Retorna alimentador à posição inicial
-  servoAlimentador.write(0);
+  servo2.write(90);
   
   // Atualiza o monitor serial com a contagem
   Serial.print("Peças Pequenas: ");
   Serial.println(contadorPequenas);
   Serial.print("Peças Grandes: ");
   Serial.println(contadorGrandes);
+}
 }
