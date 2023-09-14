@@ -37,3 +37,66 @@ void loop() {
 void pisca() {
   estado = !estado;
 }
+=====================================
+const int buttonPin = 2;        // Pino do botão
+const int heatingElementPin = 3; // Pino do elemento de aquecimento
+const int temperatureSensorPin = A0; // Pino do sensor de temperatura
+const int coffeeMakerPin = 4;     // Pino do bloco faz café
+const int cupSensorPin = 5;        // Pino do sensor de copo
+const int buzzerPin = 6;           // Pino do buzzer
+
+const int temperatureThreshold = 100; // Temperatura desejada para o café (em graus Celsius)
+
+bool coffeeReady = false;
+
+void setup() {
+  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(heatingElementPin, OUTPUT);
+  pinMode(coffeeMakerPin, OUTPUT);
+  pinMode(cupSensorPin, INPUT);
+  pinMode(buzzerPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int temperature = analogRead(temperatureSensorPin); // Leitura da temperatura do sensor
+  int buttonState = digitalRead(buttonPin); // Leitura do estado do botão
+  int cupDetected = digitalRead(cupSensorPin); // Leitura do sensor de copo
+
+  if (buttonState == LOW) {
+    Serial.println("Botão pressionado. Preparando café...");
+
+    // Aquecer a água até a temperatura desejada
+    while (temperature < temperatureThreshold) {
+      digitalWrite(heatingElementPin, HIGH);
+      temperature = analogRead(temperatureSensorPin);
+      delay(1000);
+    }
+
+    // Desligar o aquecimento
+    digitalWrite(heatingElementPin, LOW);
+
+    // Verificar se há um copo
+    if (cupDetected == HIGH) {
+      // Fazer o café
+      digitalWrite(coffeeMakerPin, HIGH);
+      delay(2000); // Tempo para fazer o café (ajuste conforme necessário)
+      digitalWrite(coffeeMakerPin, LOW);
+
+      // Sinal sonoro
+      digitalWrite(buzzerPin, HIGH);
+      delay(1000);
+      digitalWrite(buzzerPin, LOW);
+
+      coffeeReady = true;
+    } else {
+      Serial.println("Nenhum copo detectado. Café não foi feito.");
+    }
+  }
+
+  if (coffeeReady) {
+    Serial.println("Por favor, retire o copo.");
+    coffeeReady = false;
+  }
+}
+
