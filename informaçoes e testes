@@ -1,0 +1,39 @@
+NUMERO DO MARCOS, 33084278
+
+EXERCICIO 1 FUNCOES
+
+int batatinha = 0;
+
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  int a = 4;
+  int b = 5;
+  int c = multiplica(a, b);
+  Serial.println(c);
+}
+int multiplica(int x, int y) {
+  int z = 0;
+  for (int i = 0; i < y; i++) {
+    z += x;
+  }
+========================================
+const int pin_led = 13;
+const int pin_interrupt = 2;
+int estado = LOW;
+
+void setup() {
+  pinMode(pin_led, OUTPUT);
+  pinMode(pin_interrupt, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(pin_interrupt),pisca, FALLING);
+}
+
+void loop() {
+  diitalWrite(pin_led, estado);
+}
+
+void pisca() {
+  estado = !estado;
+}
