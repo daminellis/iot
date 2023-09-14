@@ -105,19 +105,19 @@ void loop() {
 #include <TimerOne.h>
 #include <DHT.h>
 
-const int botao = 2;        // botão
+const int botao       = 2;  // botão
 const int aquecimento = 3;  // aquecimento
-const int fazendo = 4;      // fazer café
-const int sensorcopo = 5;   // sensor de copo
-const int buzzer = 6;       // buzzer (led)
-const int DHTPIN = 7;       // Pino ao qual o sensor DHT está conectado
-const int temperaturaperfeita = 100; // temperatura desejada para o café
+const int fazendo     = 4;  // fazer café
+const int sensorcopo  = 5;  // sensor de copo
+const int buzzer      = 6;  // buzzer (led)
+const int DHTPIN      = 7;  // Pino ao qual o sensor DHT está conectado
+const int temperaturaperfeita = 100; //temperatura desejada para o café
 bool cafepronto = false;
 
-DHT dht(DHTPIN, DHT22); // Inicializa o sensor DHT
+DHT dht(DHTPIN, DHT11); // Inicializa o sensor DHT
 
 void aquecerAgua() {
-  int temperaturaDHT = dht.readTemperature(); // Leitura da temperatura do sensor DHT
+  int temperaturaDHT = dht.readTemperature(); //leitura da temperatura do DHT
 
   if (temperaturaDHT < temperaturaperfeita) {
     digitalWrite(aquecimento, HIGH);
@@ -128,14 +128,14 @@ void aquecerAgua() {
 }
 
 void fazerCafe() {
-  int comcopo = digitalRead(sensorcopo); // Leitura do sensor de copo
+  int comcopo = digitalRead(sensorcopo); //leitura do sensor do copo
 
   if (comcopo == HIGH) {
     // Fazer o café
     digitalWrite(fazendo, HIGH);
     digitalWrite(buzzer, HIGH);
 
-    Timer1.attachInterrupt(aquecerAgua, 1000000); // Reanexar a função de aquecimento a cada 1 segundo (1000000 microssegundos)
+    Timer1.attachInterrupt(aquecerAgua, 10000000);
 
     cafepronto = true;
   } else {
@@ -151,20 +151,20 @@ void setup() {
   pinMode(buzzer, OUTPUT);
   Serial.begin(9600);
   dht.begin(); // Inicializa o sensor DHT
-  Timer1.initialize(1000000); // Inicializa o timer com um intervalo de 1 segundo (1000000 microssegundos)
+  Timer1.initialize(10000000); //inicializa o timer
 }
 
 void loop() {
-  int estadobut = digitalRead(botao); // Leitura do estado do botão
+  int estadobut = digitalRead(botao);//estado do botão
 
   if (estadobut == LOW) {
     Serial.println("Botão pressionado. Preparando café...");
-    Timer1.attachInterrupt(aquecerAgua, 1000000); // Anexar a função de aquecimento ao timer
+    Timer1.attachInterrupt(aquecerAgua, 10000000); //função de aquecimento ao timer
 
     // Sinal sonoro
     digitalWrite(buzzer, HIGH);
 
-    // Aguardar até que a temperatura esteja pronta
+    //esperando a temperatura estar na temperatura certa
     while (!cafepronto) {
       fazerCafe();
     }
