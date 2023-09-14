@@ -102,3 +102,77 @@ void loop() {
   }
 }
 =====================================
+#include <TimerOne.h>
+#include <DHT.h>
+
+const int botao = 2;        // botão
+const int aquecimento = 3;  // aquecimento
+const int fazendo = 4;      // fazer café
+const int sensorcopo = 5;   // sensor de copo
+const int buzzer = 6;       // buzzer (led)
+const int DHTPIN = 7;       // Pino ao qual o sensor DHT está conectado
+const int temperaturaperfeita = 100; // temperatura desejada para o café
+bool cafepronto = false;
+
+DHT dht(DHTPIN, DHT22); // Inicializa o sensor DHT
+
+void aquecerAgua() {
+  int temperaturaDHT = dht.readTemperature(); // Leitura da temperatura do sensor DHT
+
+  if (temperaturaDHT < temperaturaperfeita) {
+    digitalWrite(aquecimento, HIGH);
+  } else {
+    digitalWrite(aquecimento, LOW);
+    Timer1.detachInterrupt();
+  }
+}
+
+void fazerCafe() {
+  int comcopo = digitalRead(sensorcopo); // Leitura do sensor de copo
+
+  if (comcopo == HIGH) {
+    // Fazer o café
+    digitalWrite(fazendo, HIGH);
+    digitalWrite(buzzer, HIGH);
+
+    Timer1.attachInterrupt(aquecerAgua, 1000000); // Reanexar a função de aquecimento a cada 1 segundo (1000000 microssegundos)
+
+    cafepronto = true;
+  } else {
+    Serial.println("Nenhum copo detectado. Café não foi feito.");
+  }
+}
+
+void setup() {
+  pinMode(botao, INPUT_PULLUP);
+  pinMode(aquecimento, OUTPUT);
+  pinMode(fazendo, OUTPUT);
+  pinMode(sensorcopo, INPUT);
+  pinMode(buzzer, OUTPUT);
+  Serial.begin(9600);
+  dht.begin(); // Inicializa o sensor DHT
+  Timer1.initialize(1000000); // Inicializa o timer com um intervalo de 1 segundo (1000000 microssegundos)
+}
+
+void loop() {
+  int estadobut = digitalRead(botao); // Leitura do estado do botão
+
+  if (estadobut == LOW) {
+    Serial.println("Botão pressionado. Preparando café...");
+    Timer1.attachInterrupt(aquecerAgua, 1000000); // Anexar a função de aquecimento ao timer
+
+    // Sinal sonoro
+    digitalWrite(buzzer, HIGH);
+
+    // Aguardar até que a temperatura esteja pronta
+    while (!cafepronto) {
+      fazerCafe();
+    }
+  }
+
+  if (cafepronto) {
+    Serial.println("Por favor, retire o copo.");
+    cafepronto = false;
+  }
+}
+
