@@ -139,7 +139,7 @@ void fazerCafe() {
 
     cafepronto = true;
   } else {
-    Serial.println("Nenhum copo detectado. Café não foi feito.");
+    Serial.println("Nenhum copo detectado. Café não foi feito :( .");
   }
 }
 
@@ -150,7 +150,7 @@ void setup() {
   pinMode(sensorcopo, INPUT);
   pinMode(buzzer, OUTPUT);
   Serial.begin(9600);
-  dht.begin(); // Inicializa o sensor DHT
+  dht.begin(); //inicializa o sensor DHT
   Timer1.initialize(10000000); //inicializa o timer
 }
 
@@ -171,7 +171,7 @@ void loop() {
   }
 
   if (cafepronto) {
-    Serial.println("Por favor, retire o copo.");
+    Serial.println("Por favor, retire o copo :).");
     cafepronto = false;
   }
 }
