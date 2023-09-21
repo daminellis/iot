@@ -56,7 +56,7 @@ void loop() {
     Serial.println(F("Failed to read from DHT sensor!"));
     return;
   }
-  // Compute heat index in Celsius (isFahreheit = false)
+  // Compute heat index in Celsius 
   float hic = dht.computeHeatIndex(t, h, false);
 
 
