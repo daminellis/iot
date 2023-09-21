@@ -18,3 +18,81 @@ void loop() {
 =========================================================================================
 #exercicio2
 
+#include <Servo.h>
+#include "DHT.h"
+#define DHTPIN 13
+#define DHTTYPE DHT11   // DHT 11
+Servo myservo;  // create servo object to control a servo
+int potpin = A0;  // analog pin used to connect the potentiometer
+int val;    // variable to read the value from the analog pin
+
+const int botao = 3;
+const int led1 = 4;
+const int led2 = 5;
+
+DHT dht(DHTPIN, DHTTYPE);
+void setup() {
+  Serial.begin(9600);
+  Serial.println(F("DHTxx test!"));
+  dht.begin();
+  myservo.attach(9);  // attaches the servo on pin 9 to the servo object
+  pinMode(led1, OUTPUT);
+  pinMode(led2, OUTPUT);
+  pinMode(botao,INPUT);
+}
+
+void loop() {
+  val = analogRead(potpin);            // reads the value of the potentiometer (value between 0 and 1023)
+  val = map(val, 0, 1023, 0, 180);     // scale it for use with the servo (value between 0 and 180)
+  myservo.write(val);
+  
+  // Read humidity
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
+  // Compute heat index in Celsius (isFahreheit = false)
+  float hic = dht.computeHeatIndex(t, h, false);
+
+
+  //fazendo as verificações de clima, e executando o que for necessario 
+  if ( t > 50) {
+    digitalWrite(led1, HIGH);
+  } else {
+    digitalWrite(led1, LOW); 
+  }
+  
+  if ( t < 10) {
+    digitalWrite(led1, HIGH);
+  } else {
+    digitalWrite(led1, LOW); 
+  }
+  
+  if ( h < 90) {
+    digitalWrite(led1, HIGH);
+  } else {
+    digitalWrite(led1, LOW); 
+  }
+  
+  if (t > 30){
+     myservo.write(90);
+     digitalWrite(led2, HIGH); 
+  }
+  else if (t > 25){
+     myservo.write(45);
+     digitalWrite(led2, HIGH);
+  }
+  else if (t > 20 ){
+    myservo.write(45);
+    digitalWrite(led2,LOW);
+  }
+  else if (t <= 20 ){
+    myservo.write(0);
+    digitalWrite(led2,LOW);
+  }
+}
