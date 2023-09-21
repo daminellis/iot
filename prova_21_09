@@ -59,7 +59,7 @@ void loop() {
   // Compute heat index in Celsius 
   float hic = dht.computeHeatIndex(t, h, false);
 
-
+  if (botao, 
   //fazendo as verificações de clima, e executando o que for necessario 
   if ( t > 50) {
     digitalWrite(led1, HIGH);
