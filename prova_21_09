@@ -1,0 +1,20 @@
+const int potPin = A0; // Pino analógico onde o potenciômetro está conectado
+
+void setup() {
+  Serial.begin(1200); 
+}
+
+void loop() {
+  int valorPotenciometro = analogRead(potPin); // Lê o valor do potenciômetro (0-1023)
+  
+  // Converte o valor lido para uma escala de 0 a 100%
+  float porcentagem = (float)valorPotenciometro / 970 * 100.0;
+  Serial.print("Valor em porcentagem : ");
+  Serial.println(porcentagem);
+  Serial.print("Valor em escala potenciometro : ");
+  Serial.println(valorPotenciometro);
+}
+=========================================================================================
+=========================================================================================
+#exercicio2
+
