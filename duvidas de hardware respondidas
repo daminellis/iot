@@ -1,0 +1,19 @@
+Conexão com o Teclado Numérico:
+
+Conexões Físicas: Você deve conectar as saídas do teclado numérico (linhas e colunas) a pinos digitais do ESP32. 
+  A configuração exata depende do seu teclado numérico. Normalmente, os pinos do teclado numérico são organizados em uma matriz
+  onde algumas linhas e colunas são usadas para representar os dígitos. Você conectará as linhas do teclado numérico a pinos de saída do ESP32 e as colunas a pinos de entrada.
+  Consulte o datasheet ou as especificações do teclado numérico para obter informações detalhadas sobre as conexões.
+
+Biblioteca Keypad: Você precisará usar a biblioteca Keypad para ler as entradas do teclado numérico. 
+  Configure a biblioteca para corresponder à configuração do seu teclado numérico e leia as teclas pressionadas.
+
+Tratamento de Teclas: No loop do seu código, você pode verificar constantemente se uma tecla foi pressionada no teclado numérico.
+  Você pode armazenar a sequência de teclas digitadas e compará-la com a senha definida para o cofre.
+
+Conexões Físicas: O solenoide deve ser conectado a um pino digital do ESP32.
+  Além disso, você deve ter uma fonte de alimentação adequada para o solenoide, pois ele pode consumir uma corrente significativa durante a ativação.
+
+Controle do Solenoide: Para controlar o solenoide, você pode definir o pino do ESP32 conectado ao solenoide como saída. 
+  Quando a senha correta for inserida (ou quando o comando apropriado for recebido via MQTT ou da interface web)
+  você pode definir o pino como HIGH para ativar o solenoide e, depois de um tempo, definir o pino como LOW para desativá-lo.
