@@ -1,0 +1,67 @@
+CONEXAO DO ESP 32 A INTERNET 
+-------------------------------------------------------------------------------
+  #include <WiFi.h>
+
+//setando o esp 32 a nossa internet 
+const char *ssid = "SARC IOT";     
+const char *password = "IOT2023@"; 
+
+void setup() {
+  Serial.begin(115200);
+
+  // conectando a rede Wi-Fi
+  WiFi.begin(ssid, password);
+  
+  Serial.print("Conectando à rede Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+  Serial.println();
+  
+  // se conectado com sucesso, exiba informações de rede
+  Serial.println("Conectado à rede Wi-Fi");
+  Serial.print("Endereço IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  // Seu código aqui
+}
+-------------------------------------------------------------------------------
+INICIANDO O SERVIDOR WEB
+-------------------------------------------------------------------------------
+ // Inicializa o servidor web
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/html", "Digite a senha para abrir o cofre: <input type='text' id='senha'><button onclick='verificarSenha()'>Verificar</button><p id='status'></p><script>function verificarSenha(){var senha=document.getElementById('senha').value;if(senha=='" + senhaCorreta + "'){document.getElementById('status').innerHTML='Senha correta. Abrindo...';fetch('/abrir').then(response=>response.text()).then(data=>console.log(data));}else{document.getElementById('status').innerHTML='Senha incorreta.';}}</script>");
+  });
+
+  server.on("/abrir", HTTP_GET, [](AsyncWebServerRequest *request){
+    // Verifica se a senha está correta e abre o cofre
+    if (request->hasParam("senha")) {
+      String senha = request->getParam("senha")->value();
+      if (senha == senhaCorreta) {
+        digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
+        delay(2000); // Mantém o solenoide acionado por 2 segundos (ajuste conforme necessário)
+        digitalWrite(solenoidePin, LOW); // Desliga o solenoide
+        request->send(200, "text/plain", "Cofre aberto");
+      } else {
+        request->send(403, "text/plain", "Senha incorreta");
+      }
+    } else {
+      request->send(400, "text/plain", "Parâmetro de senha ausente");
+    }
+  });
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
