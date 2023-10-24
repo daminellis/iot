@@ -3,7 +3,7 @@ CONEXAO DO ESP 32 A INTERNET
   #include <WiFi.h>
 
 //setando o esp 32 a nossa internet 
-const char *ssid = "SARC IOT";     
+const char *ssid = "SATC IOT";     
 const char *password = "IOT2023@"; 
 
 void setup() {
