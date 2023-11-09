@@ -1,39 +1,33 @@
 #include <WiFi.h>
-#include <ESPAsyncWebServer.h>
 #include <Keypad.h>
-#include <Adafruit_MQTT.h>
-#include <Adafruit_MQTT_Client.h>
 
-const char *ssid = "NomeDaSuaRedeWiFi";
-const char *password = "SenhaDaSuaRedeWiFi";
-
-// Define a senha padrão para o cofre
-String senhaCofre = "1234";
+const char *ssid = "SATC IOT";
+const char *password = "IOT2023@";
 
 // Define as pinagens do solenoide
 const int solenoidePin = 2;
 
 // Define as configurações do teclado numérico
-const byte numRows = 4;
-const byte numCols = 4;
-char keymap[numRows][numCols] = {
+const uint8_t ROWS = 4;
+const uint8_t COLS = 4;
+char keys[ROWS][COLS] = {
   {'1', '2', '3', 'A'},
   {'4', '5', '6', 'B'},
   {'7', '8', '9', 'C'},
   {'*', '0', '#', 'D'}
 };
-Keypad keypad = Keypad(makeKeymap(keymap), numRows, numCols);
 
-AsyncWebServer server(80);
+uint8_t colPins[COLS] = {16, 4, 2, 15};
+uint8_t rowPins[ROWS] = {19, 18, 5, 17};
 
-// Define as configurações do servidor MQTT
-#define MQTT_SERVER "seu-servidor-MQTT"
-#define MQTT_PORT 1883
-#define MQTT_USERNAME "seu-usuario-MQTT"
-#define MQTT_PASSWORD "sua-senha-MQTT"
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-WiFiClient wifiClient;
-Adafruit_MQTT_Client mqttClient(&wifiClient, MQTT_SERVER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD);
+WiFiServer server(80);
+
+String senhaCofre = "1234"; // Defina sua senha aqui
+String senhaDigitada = "";
+bool senhaSend = false;      // Flag para confirmar o envio da nova senha
+bool cofreAberto = false;    // Flag para verificar se o cofre está aberto
 
 void setup() {
   Serial.begin(115200);
@@ -46,70 +40,106 @@ void setup() {
   }
   Serial.println("Conectado ao WiFi");
 
-  // Inicializa o servidor web
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    String html = "<html><body>";
-    html += "Digite a senha para abrir o cofre: <input type='text' id='senha'>";
-    html += "<button onclick='verificarSenha()'>Verificar</button>";
-    html += "<p id='status'></p>";
-    html += "<button onclick='abrirCofre()'>Abrir Cofre</button>";
-    html += "</body></html>";
-    request->send(200, "text/html", html);
-  });
-
-  // Configura a rota para abrir o cofre via MQTT
-  server.on("/abrir", HTTP_GET, [](AsyncWebServerRequest *request){
-    // Verifica se a senha está correta e abre o cofre
-    if (request->hasParam("senha")) {
-      String senha = request->getParam("senha")->value();
-      if (senha == senhaCofre) {
-        digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
-        delay(2000); // Mantém o solenoide acionado por 2 segundos (ajuste conforme necessário)
-        digitalWrite(solenoidePin, LOW); // Desliga o solenoide
-        request->send(200, "text/plain", "Cofre aberto");
-      } else {
-        request->send(403, "text/plain", "Senha incorreta");
-      }
-    } else {
-      request->send(400, "text/plain", "Parâmetro de senha ausente");
-    }
-  });
+  // Imprime o endereço IP atribuído ao dispositivo
+  Serial.print("Endereço IP: ");
+  Serial.println(WiFi.localIP());
 
   // Inicializa o solenoide
   pinMode(solenoidePin, OUTPUT);
   digitalWrite(solenoidePin, LOW); // Garante que o solenoide esteja desligado
 
-  // Conecta-se ao servidor MQTT
-  if (mqttClient.connect()) {
-    Serial.println("Conectado ao servidor MQTT");
-    mqttClient.subscribe("cofre/abrir");
-  } else {
-    Serial.println("Falha na conexão MQTT");
-  }
-
   server.begin();
 }
 
 void loop() {
-  // Lógica para lidar com a entrada do teclado numérico (opcional)
+  // Lógica para lidar com a entrada do teclado numérico
   char key = keypad.getKey();
   if (key) {
-    // Adicione a lógica para processar a entrada do teclado numérico
+    processarTecla(key);
   }
 
-  // Lógica para lidar com mensagens MQTT
-  Adafruit_MQTT_Subscribe *subscription;
-  while ((subscription = mqttClient.readSubscription(5000))) {
-    if (subscription == &mqttCofreAbrir) {
-      // Lógica para abrir o cofre via MQTT
-      abrirCofre();
+  // Lógica para lidar com solicitações HTTP
+  WiFiClient client = server.available();
+  if (client) {
+    // Aguarde até que o cliente envie dados
+    while (client.connected() && !client.available()) {
+      delay(1);
     }
+
+    // Processa a solicitação do cliente, se houver
+    if (client.available()) {
+      processarSolicitacao(client);
+    }
+
+    // Fecha a conexão
+    client.stop();
   }
+}
+
+// Função para processar a entrada do teclado numérico
+void processarTecla(char tecla) {
+  // Adicione a lógica para processar a tecla pressionada
+  // Pode ser usado para construir a senha, por exemplo
+  senhaDigitada += tecla;
+}
+
+// Função para processar solicitações HTTP
+void processarSolicitacao(WiFiClient client) {
+  String resposta = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
+  resposta += "<html><body>";
+
+  if (!cofreAberto) {
+    // Se o cofre não estiver aberto, exibe a interface padrão
+    resposta += "Digite a senha para abrir o cofre: <input type='password' id='senha'>";
+    resposta += "<button onclick='verificarSenha()'>Verificar</button>";
+    resposta += "<p id='status'></p>";
+    resposta += "<button onclick='abrirCofre()'>Abrir Cofre</button>";
+    resposta += "<br>";
+    resposta += "Digite a nova senha: <input type='password' id='novaSenha'>";
+    resposta += "<button onclick='enviarSenha()'>Confirmar Nova Senha</button>";
+  } else {
+    // Se o cofre estiver aberto, exibe uma mensagem
+    resposta += "<p>O cofre está aberto!</p>";
+  }
+
+  resposta += "</body></html>";
+
+  // Envia a resposta para o cliente
+  client.print(resposta);
+}
+
+// Função para verificar a senha
+void verificarSenha() {
+  // Adicione a lógica para verificar a senha inserida
+  if (senhaDigitada == senhaCofre) {
+    Serial.println("Senha correta. Cofre aberto.");
+    cofreAberto = true;
+    digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
+    delay(3000);                       // Mantém o solenoide acionado por 3 segundos
+    digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
+  } else {
+    Serial.println("Senha incorreta.");
+  }
+
+  // Limpa a senha digitada
+  senhaDigitada = "";
 }
 
 // Função para abrir o cofre
 void abrirCofre() {
+  // Adicione a lógica para abrir o cofre sem digitar a senha
+  cofreAberto = true;
   digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
-  delay(2000); // Mantém o solenoide acionado por 2 segundos (ajuste conforme necessário)
-  digitalWrite(solenoidePin, LOW); // Desliga o solenoide
+  delay(3000);                       // Mantém o solenoide acionado por 3 segundos
+  digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
+}
+
+// Função para confirmar a alteração da senha
+void enviarSenha() {
+  // Adicione a lógica para confirmar a alteração da senha
+  // Pode ser usada para enviar a nova senha para o sistema
+  senhaCofre = senhaDigitada;
+  senhaDigitada = "";
+  senhaSend = true;
+  Serial.println("Nova senha confirmada.");
 }
