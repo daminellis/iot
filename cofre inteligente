@@ -86,16 +86,20 @@ void processarTecla(char tecla) {
 // Função para processar solicitações HTTP
 void processarSolicitacao(WiFiClient client) {
   String resposta = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
-  resposta += "<html><body>";
+
+  resposta += "<!DOCTYPE html><html><head><title>Arduino Web Server</title></head><body>";
 
   if (!cofreAberto) {
     // Se o cofre não estiver aberto, exibe a interface padrão
-    resposta += "Digite a senha para abrir o cofre: <input type='password' id='senha'>";
+    resposta += "O código do ESP32 cria um cofre controlado por senha, integrando hardware (solenoide, teclado numérico) e software (WiFi). Destaca-se pela organização modular, foco na segurança com verificação rigorosa da senha e manipulação eficiente de solicitações HTTP para uma interface web intuitiva, permitindo controle remoto e flexibilidade, incluindo a alteração da senha.";
+    resposta += "<label for='senha'>Digite a senha para abrir o cofre:</label>";
+    resposta += "<input type='password' id='senha'>";
     resposta += "<button onclick='verificarSenha()'>Verificar</button>";
     resposta += "<p id='status'></p>";
     resposta += "<button onclick='abrirCofre()'>Abrir Cofre</button>";
     resposta += "<br>";
-    resposta += "Digite a nova senha: <input type='password' id='novaSenha'>";
+    resposta += "<label for='novaSenha'>Digite a nova senha:</label>";
+    resposta += "<input type='password' id='novaSenha'>";
     resposta += "<button onclick='enviarSenha()'>Confirmar Nova Senha</button>";
   } else {
     // Se o cofre estiver aberto, exibe uma mensagem
