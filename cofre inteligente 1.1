@@ -24,10 +24,13 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 WiFiServer server(80);
 
-String senhaCofre = "1222"; // Defina sua senha aqui
 String senhaDigitada = "";
+String senhaCofre = ""; // Adicione a declaração da variável senhaCofre
 bool senhaSend = false;    // Flag para confirmar o envio da nova senha
 bool cofreAberto = false;  // Flag para verificar se o cofre está aberto
+
+unsigned long solenoideStartTime = 0; // Variável para controlar o tempo de acionamento do solenoide
+const unsigned long solenoideDuration = 4000; // Duração em milissegundos (4 segundos)
 
 void setup()
 {
@@ -92,6 +95,13 @@ void loop()
         acionarBuzzer();
         senhaSend = false; // Reinicia a flag de senha enviada
     }
+
+    // Lógica para desligar o solenoide após o tempo definido
+    if (cofreAberto && millis() - solenoideStartTime >= solenoideDuration)
+    {
+        digitalWrite(solenoidePin, LOW); // Desliga o solenoide
+        cofreAberto = false;
+    }
 }
 
 void processarTecla(char tecla)
@@ -116,40 +126,22 @@ void processarSolicitacao(WiFiClient client)
 
     if (!cofreAberto)
     {
-        // ... (código existente)
-
-        resposta += "<button onclick='verificarSenha()'>Verificar</button>";
         resposta += "<p id='status'></p>";
-        resposta += "<button onclick='abrirCofre()'>Abrir Cofre</button>";
         resposta += "<br>";
         resposta += "<label for='novaSenha'>Digite a nova senha:</label>";
         resposta += "<input type='password' id='novaSenha'>";
-        resposta += "<button onclick='enviarSenha()'>Confirmar Nova Senha</button>";
+        resposta += "<button onclick='enviarNovaSenha()'>Confirmar Nova Senha</button>";
         resposta += "<br>";
         resposta += "<button onclick='acionarSolenoide()'>Acionar Solenoide</button>";
     }
-    else
-    {
-        // ... (código existente)
-    }
 
     resposta += "<script>";
-    resposta += "function verificarSenha() {";
-    resposta += "  var senhaDigitada = document.getElementById('senha').value;";
-    resposta += "  var xhttp = new XMLHttpRequest();";
-    resposta += "  xhttp.open('GET', '/verificarSenha?senha=' + senhaDigitada, true);";
-    resposta += "  xhttp.send();";
-    resposta += "}";
-    resposta += "function abrirCofre() {";
-    resposta += "  var xhttp = new XMLHttpRequest();";
-    resposta += "  xhttp.open('GET', '/abrirCofre', true);";
-    resposta += "  xhttp.send();";
-    resposta += "}";
-    resposta += "function enviarSenha() {";
+    resposta += "function enviarNovaSenha() {";
     resposta += "  var novaSenha = document.getElementById('novaSenha').value;";
     resposta += "  var xhttp = new XMLHttpRequest();";
     resposta += "  xhttp.open('GET', '/enviarSenha?senha=' + novaSenha, true);";
     resposta += "  xhttp.send();";
+    resposta += "  alert('Nova senha enviada com sucesso!');";
     resposta += "}";
     resposta += "function acionarSolenoide() {";
     resposta += "  var xhttp = new XMLHttpRequest();";
@@ -171,8 +163,7 @@ void verificarSenha()
         Serial.println("Senha correta. Cofre aberto.");
         cofreAberto = true;
         digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
-        delay(3000);                       // Mantém o solenoide acionado por 3 segundos
-        digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
+        solenoideStartTime = millis();     // Registra o tempo de início do acionamento do solenoide
     }
     else
     {
@@ -183,22 +174,13 @@ void verificarSenha()
     senhaDigitada = "";
 }
 
-void abrirCofre()
-{
-    cofreAberto = true;
-    digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
-    delay(3000);                       // Mantém o solenoide acionado por 3 segundos
-    digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
-}
-
 void enviarSenha()
 {
-    senhaCofre = senhaDigitada;
+    // Agora senhaCofre é uma variável local em vez de global
+    String novaSenha = senhaDigitada;
     senhaSend = true;
-    Serial.println("Nova senha confirmada.");
-    verificarSenha(); // Adiciona esta linha para verificar a nova senha imediatamente
+    Serial.println("Nova senha confirmada: " + novaSenha);
 }
-
 
 // Adiciona esta função para acionar o buzzer em caso de senha incorreta
 void acionarBuzzerErro()
@@ -214,7 +196,7 @@ void acionarSolenoide()
 {
     Serial.println("Solenoide acionado.");
     digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
-    delay(3000);                       // Mantém o solenoide acionado por 3 segundos
+    delay(solenoideDuration);          // Mantém o solenoide acionado pelo tempo definido
     digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
 }
 
