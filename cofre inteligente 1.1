@@ -94,18 +94,20 @@ void loop()
     }
 }
 
-// Função para processar a entrada do teclado numérico
 void processarTecla(char tecla)
 {
-    // Adicione a lógica para processar a tecla pressionada
-    // Pode ser usado para construir a senha, por exemplo
     senhaDigitada += tecla;
+
+    // Adicione a lógica para verificar a senha a cada 4 dígitos
+    if (senhaDigitada.length() == 4)
+    {
+        verificarSenha();
+    }
 
     // Aciona o buzzer como aviso sonoro
     acionarBuzzer();
 }
 
-// Função para processar solicitações HTTP
 void processarSolicitacao(WiFiClient client)
 {
     String resposta = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
@@ -114,10 +116,8 @@ void processarSolicitacao(WiFiClient client)
 
     if (!cofreAberto)
     {
-        // Se o cofre não estiver aberto, exibe a interface padrão
-        resposta += "O código do ESP32 cria um cofre controlado por senha, integrando hardware (solenoide, teclado numérico) e software (WiFi). Destaca-se pela organização modular, foco na segurança com verificação rigorosa da senha e manipulação eficiente de solicitações HTTP para uma interface web intuitiva, permitindo controle remoto e flexibilidade, incluindo a alteração da senha.";
-        resposta += "<label for='senha'>Digite a senha para abrir o cofre:</label>";
-        resposta += "<input type='password' id='senha'>";
+        // ... (código existente)
+
         resposta += "<button onclick='verificarSenha()'>Verificar</button>";
         resposta += "<p id='status'></p>";
         resposta += "<button onclick='abrirCofre()'>Abrir Cofre</button>";
@@ -130,26 +130,22 @@ void processarSolicitacao(WiFiClient client)
     }
     else
     {
-        // Se o cofre estiver aberto, exibe uma mensagem
-        resposta += "<p>O cofre está aberto!</p>";
+        // ... (código existente)
     }
 
     resposta += "<script>";
     resposta += "function verificarSenha() {";
-    resposta += "  // Adicione a lógica para verificar a senha inserida";
     resposta += "  var senhaDigitada = document.getElementById('senha').value;";
     resposta += "  var xhttp = new XMLHttpRequest();";
     resposta += "  xhttp.open('GET', '/verificarSenha?senha=' + senhaDigitada, true);";
     resposta += "  xhttp.send();";
     resposta += "}";
     resposta += "function abrirCofre() {";
-    resposta += "  // Adicione a lógica para abrir o cofre sem digitar a senha";
     resposta += "  var xhttp = new XMLHttpRequest();";
     resposta += "  xhttp.open('GET', '/abrirCofre', true);";
     resposta += "  xhttp.send();";
     resposta += "}";
     resposta += "function enviarSenha() {";
-    resposta += "  // Adicione a lógica para confirmar a alteração da senha";
     resposta += "  var novaSenha = document.getElementById('novaSenha').value;";
     resposta += "  var xhttp = new XMLHttpRequest();";
     resposta += "  xhttp.open('GET', '/enviarSenha?senha=' + novaSenha, true);";
@@ -168,10 +164,8 @@ void processarSolicitacao(WiFiClient client)
     client.print(resposta);
 }
 
-// Função para verificar a senha
 void verificarSenha()
 {
-    // Adicione a lógica para verificar a senha
     if (senhaDigitada == senhaCofre)
     {
         Serial.println("Senha correta. Cofre aberto.");
@@ -183,34 +177,38 @@ void verificarSenha()
     else
     {
         Serial.println("Senha incorreta.");
+        acionarBuzzerErro(); // Adiciona uma função para acionar o buzzer de erro
     }
 
-    // Limpa a senha digitada
     senhaDigitada = "";
 }
 
-// Função para abrir o cofre
 void abrirCofre()
 {
-    // Adicione a lógica para abrir o cofre sem digitar a senha
     cofreAberto = true;
     digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
     delay(3000);                       // Mantém o solenoide acionado por 3 segundos
     digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
 }
 
-// Função para confirmar a alteração da senha
 void enviarSenha()
 {
-    // Adicione a lógica para confirmar a alteração da senha
-    // Pode ser usada para enviar a nova senha para o sistema
     senhaCofre = senhaDigitada;
     senhaDigitada = "";
     senhaSend = true;
     Serial.println("Nova senha confirmada.");
 }
 
-// Função para acionar o solenoide
+// Adiciona esta função para acionar o buzzer em caso de senha incorreta
+void acionarBuzzerErro()
+{
+    for (int i = 0; i < 2; ++i)
+    {
+        tone(buzzerPin, 1000, 200);
+        delay(300);
+    }
+}
+
 void acionarSolenoide()
 {
     Serial.println("Solenoide acionado.");
@@ -219,8 +217,7 @@ void acionarSolenoide()
     digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
 }
 
-// Função para acionar o buzzer
 void acionarBuzzer()
 {
-    tone(buzzerPin, 1000, 200); // Frequência e duração do som (ajuste conforme necessário)
+    tone(buzzerPin, 1000, 200);
 }
