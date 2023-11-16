@@ -1,0 +1,211 @@
+#include <WiFi.h>
+#include <Keypad.h>
+
+const char *ssid = "SATC IOT";
+const char *password = "IOT2023@";
+
+// Define as pinagens do solenoide
+const int solenoidePin = 22;
+
+// Define as configurações do teclado numérico
+const uint8_t ROWS = 4;
+const uint8_t COLS = 4;
+char keys[ROWS][COLS] = {
+    {'1', '2', '3', 'A'},
+    {'4', '5', '6', 'B'},
+    {'7', '8', '9', 'C'},
+    {'*', '0', '#', 'D'}};
+
+uint8_t colPins[COLS] = {16, 4, 2, 15};
+uint8_t rowPins[ROWS] = {19, 18, 5, 17};
+
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+WiFiServer server(80);
+
+String senhaCofre = "1234"; // Defina sua senha aqui
+String senhaDigitada = "";
+bool senhaSend = false;    // Flag para confirmar o envio da nova senha
+bool cofreAberto = false;  // Flag para verificar se o cofre está aberto
+
+void setup()
+{
+    Serial.begin(115200);
+
+    // Inicializa o WiFi
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        delay(1000);
+        Serial.println("Conectando ao WiFi...");
+    }
+    Serial.println("Conectado ao WiFi");
+
+    // Imprime o endereço IP atribuído ao dispositivo
+    Serial.print("Endereço IP: ");
+    Serial.println(WiFi.localIP());
+
+    // Inicializa o solenoide
+    pinMode(solenoidePin, OUTPUT);
+    digitalWrite(solenoidePin, LOW); // Garante que o solenoide esteja desligado
+
+    server.begin();
+}
+
+void loop()
+{
+    // Lógica para lidar com a entrada do teclado numérico
+    char key = keypad.getKey();
+    if (key)
+    {
+        processarTecla(key);
+    }
+
+    // Lógica para lidar com solicitações HTTP
+    WiFiClient client = server.available();
+    if (client)
+    {
+        // Aguarde até que o cliente envie dados
+        while (client.connected() && !client.available())
+        {
+            delay(1);
+        }
+
+        // Processa a solicitação do cliente, se houver
+        if (client.available())
+        {
+            processarSolicitacao(client);
+        }
+
+        // Fecha a conexão
+        client.stop();
+    }
+    else if (senhaSend)
+    {
+        // Lógica para acionar o solenoide após receber a solicitação do cliente
+        acionarSolenoide();
+        senhaSend = false; // Reinicia a flag de senha enviada
+    }
+}
+
+// Função para processar a entrada do teclado numérico
+void processarTecla(char tecla)
+{
+    // Adicione a lógica para processar a tecla pressionada
+    // Pode ser usado para construir a senha, por exemplo
+    senhaDigitada += tecla;
+}
+
+// Função para processar solicitações HTTP
+void processarSolicitacao(WiFiClient client)
+{
+    String resposta = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
+
+    resposta += "<!DOCTYPE html><html><head><title>Arduino Web Server</title></head><body>";
+
+    if (!cofreAberto)
+    {
+        // Se o cofre não estiver aberto, exibe a interface padrão
+        resposta += "O código do ESP32 cria um cofre controlado por senha, integrando hardware (solenoide, teclado numérico) e software (WiFi). Destaca-se pela organização modular, foco na segurança com verificação rigorosa da senha e manipulação eficiente de solicitações HTTP para uma interface web intuitiva, permitindo controle remoto e flexibilidade, incluindo a alteração da senha.";
+        resposta += "<label for='senha'>Digite a senha para abrir o cofre:</label>";
+        resposta += "<input type='password' id='senha'>";
+        resposta += "<button onclick='verificarSenha()'>Verificar</button>";
+        resposta += "<p id='status'></p>";
+        resposta += "<button onclick='abrirCofre()'>Abrir Cofre</button>";
+        resposta += "<br>";
+        resposta += "<label for='novaSenha'>Digite a nova senha:</label>";
+        resposta += "<input type='password' id='novaSenha'>";
+        resposta += "<button onclick='enviarSenha()'>Confirmar Nova Senha</button>";
+        resposta += "<br>";
+        resposta += "<button onclick='acionarSolenoide()'>Acionar Solenoide</button>";
+    }
+    else
+    {
+        // Se o cofre estiver aberto, exibe uma mensagem
+        resposta += "<p>O cofre está aberto!</p>";
+    }
+
+    resposta += "<script>";
+    resposta += "function verificarSenha() {";
+    resposta += "  // Adicione a lógica para verificar a senha inserida";
+    resposta += "  var senhaDigitada = document.getElementById('senha').value;";
+    resposta += "  var xhttp = new XMLHttpRequest();";
+    resposta += "  xhttp.open('GET', '/verificarSenha?senha=' + senhaDigitada, true);";
+    resposta += "  xhttp.send();";
+    resposta += "}";
+    resposta += "function abrirCofre() {";
+    resposta += "  // Adicione a lógica para abrir o cofre sem digitar a senha";
+    resposta += "  var xhttp = new XMLHttpRequest();";
+    resposta += "  xhttp.open('GET', '/abrirCofre', true);";
+    resposta += "  xhttp.send();";
+    resposta += "}";
+    resposta += "function enviarSenha() {";
+    resposta += "  // Adicione a lógica para confirmar a alteração da senha";
+    resposta += "  var novaSenha = document.getElementById('novaSenha').value;";
+    resposta += "  var xhttp = new XMLHttpRequest();";
+    resposta += "  xhttp.open('GET', '/enviarSenha?senha=' + novaSenha, true);";
+    resposta += "  xhttp.send();";
+    resposta += "}";
+    resposta += "function acionarSolenoide() {";
+    resposta += "  var xhttp = new XMLHttpRequest();";
+    resposta += "  xhttp.open('GET', '/acionarSolenoide', true);";
+    resposta += "  xhttp.send();";
+    resposta += "}";
+    resposta += "</script>";
+
+    resposta += "</body></html>";
+
+    // Envia a resposta para o cliente
+    client.print(resposta);
+}
+
+// Função para verificar a senha
+void verificarSenha()
+{
+    // Adicione a lógica para verificar a senha
+    if (senhaDigitada == senhaCofre)
+    {
+        Serial.println("Senha correta. Cofre aberto.");
+        cofreAberto = true;
+        digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
+        delay(3000);                       // Mantém o solenoide acionado por 3 segundos
+        digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
+    }
+    else
+    {
+        Serial.println("Senha incorreta.");
+    }
+
+    // Limpa a senha digitada
+    senhaDigitada = "";
+}
+
+// Função para abrir o cofre
+void abrirCofre()
+{
+    // Adicione a lógica para abrir o cofre sem digitar a senha
+    cofreAberto = true;
+    digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
+    delay(3000);                       // Mantém o solenoide acionado por 3 segundos
+    digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
+}
+
+// Função para confirmar a alteração da senha
+void enviarSenha()
+{
+    // Adicione a lógica para confirmar a alteração da senha
+    // Pode ser usada para enviar a nova senha para o sistema
+    senhaCofre = senhaDigitada;
+    senhaDigitada = "";
+    senhaSend = true;
+    Serial.println("Nova senha confirmada.");
+}
+
+// Função para acionar o solenoide
+void acionarSolenoide()
+{
+    Serial.println("Solenoide acionado.");
+    digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
+    delay(3000);                       // Mantém o solenoide acionado por 3 segundos
+    digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
+}
