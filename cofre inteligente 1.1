@@ -24,7 +24,7 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 WiFiServer server(80);
 
-String senhaCofre = "1234"; // Defina sua senha aqui
+String senhaCofre = "1222"; // Defina sua senha aqui
 String senhaDigitada = "";
 bool senhaSend = false;    // Flag para confirmar o envio da nova senha
 bool cofreAberto = false;  // Flag para verificar se o cofre está aberto
@@ -194,10 +194,11 @@ void abrirCofre()
 void enviarSenha()
 {
     senhaCofre = senhaDigitada;
-    senhaDigitada = "";
     senhaSend = true;
     Serial.println("Nova senha confirmada.");
+    verificarSenha(); // Adiciona esta linha para verificar a nova senha imediatamente
 }
+
 
 // Adiciona esta função para acionar o buzzer em caso de senha incorreta
 void acionarBuzzerErro()
