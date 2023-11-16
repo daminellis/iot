@@ -4,8 +4,9 @@
 const char *ssid = "SATC IOT";
 const char *password = "IOT2023@";
 
-// Define as pinagens do solenoide
+// Define as pinagens do solenoide e buzzer
 const int solenoidePin = 22;
+const int buzzerPin = 23; // Substitua pela pinagem correta do seu buzzer
 
 // Define as configurações do teclado numérico
 const uint8_t ROWS = 4;
@@ -49,6 +50,10 @@ void setup()
     pinMode(solenoidePin, OUTPUT);
     digitalWrite(solenoidePin, LOW); // Garante que o solenoide esteja desligado
 
+    // Inicializa o buzzer
+    pinMode(buzzerPin, OUTPUT);
+    digitalWrite(buzzerPin, LOW); // Garante que o buzzer esteja desligado
+
     server.begin();
 }
 
@@ -82,8 +87,9 @@ void loop()
     }
     else if (senhaSend)
     {
-        // Lógica para acionar o solenoide após receber a solicitação do cliente
+        // Lógica para acionar o solenoide e buzzer após receber a solicitação do cliente
         acionarSolenoide();
+        acionarBuzzer();
         senhaSend = false; // Reinicia a flag de senha enviada
     }
 }
@@ -94,6 +100,9 @@ void processarTecla(char tecla)
     // Adicione a lógica para processar a tecla pressionada
     // Pode ser usado para construir a senha, por exemplo
     senhaDigitada += tecla;
+
+    // Aciona o buzzer como aviso sonoro
+    acionarBuzzer();
 }
 
 // Função para processar solicitações HTTP
@@ -208,4 +217,10 @@ void acionarSolenoide()
     digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
     delay(3000);                       // Mantém o solenoide acionado por 3 segundos
     digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
+}
+
+// Função para acionar o buzzer
+void acionarBuzzer()
+{
+    tone(buzzerPin, 1000, 200); // Frequência e duração do som (ajuste conforme necessário)
 }
