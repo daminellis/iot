@@ -229,4 +229,3 @@ void acionarBuzzer()
 {
     tone(buzzerPin, 1000, 200);
 }
-
