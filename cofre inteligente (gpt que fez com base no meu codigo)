@@ -1,0 +1,180 @@
+#include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include <Keypad.h>
+
+const char *ssid = "SATC IOT";
+const char *password = "IOT2023@";
+
+const int solenoidePin = 22;
+const int buzzerPin = 23;
+
+const uint8_t ROWS = 4;
+const uint8_t COLS = 4;
+char keys[ROWS][COLS] = {
+    {'1', '2', '3', 'A'},
+    {'4', '5', '6', 'B'},
+    {'7', '8', '9', 'C'},
+    {'*', '0', '#', 'D'}};
+
+uint8_t colPins[COLS] = {16, 4, 2, 15};
+uint8_t rowPins[ROWS] = {19, 18, 5, 17};
+
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+AsyncWebServer server(80);
+
+String senhaDigitada = "";
+String senhaCofre = "";
+bool senhaSend = false;
+bool cofreAberto = false;
+
+unsigned long solenoideStartTime = 0;
+const unsigned long solenoideDuration = 4000;
+
+void setup()
+{
+    Serial.begin(115200);
+
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        delay(1000);
+        Serial.println("Conectando ao WiFi...");
+    }
+    Serial.println("Conectado ao WiFi");
+
+    Serial.print("Endereço IP: ");
+    Serial.println(WiFi.localIP());
+
+    pinMode(solenoidePin, OUTPUT);
+    digitalWrite(solenoidePin, LOW);
+
+    pinMode(buzzerPin, OUTPUT);
+    digitalWrite(buzzerPin, LOW);
+
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+        String html = "<html><body>";
+        html += "<p id='status'></p><br>";
+        html += "<label for='novaSenha'>Digite a nova senha:</label>";
+        html += "<input type='password' id='novaSenha'>";
+        html += "<button onclick='enviarNovaSenha()'>Confirmar Nova Senha</button><br>";
+        html += "<button onclick='acionarSolenoide()'>Abrir Cofre</button>";
+        html += "<script>";
+        html += "function enviarNovaSenha() {";
+        html += "var novaSenha = document.getElementById('novaSenha').value;";
+        html += "if (novaSenha.trim() !== '') {";
+        html += "var xhttp = new XMLHttpRequest();";
+        html += "xhttp.open('GET', '/enviarSenha?senha=' + novaSenha, true);";
+        html += "xhttp.send();";
+        html += "alert('Nova senha enviada com sucesso!');";
+        html += "} else {";
+        html += "alert('Por favor, digite uma nova senha válida.');";
+        html += "}";
+        html += "}";
+        html += "function acionarSolenoide() {";
+        html += "var xhttp = new XMLHttpRequest();";
+        html += "xhttp.open('GET', '/acionarSolenoide', true);";
+        html += "xhttp.send();";
+        html += "}";
+        html += "</script>";
+        html += "</body></html>";
+        request->send(200, "text/html", html);
+    });
+
+    server.on("/enviarSenha", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("senha"))
+        {
+            senhaCofre = request->getParam("senha")->value();
+            senhaCofre.trim();
+            Serial.println("Senha recebida: " + senhaCofre);
+        }
+        request->send(200, "text/plain", "OK");
+    });
+
+    server.on("/acionarSolenoide", HTTP_GET, [](AsyncWebServerRequest *request) {
+        acionarSolenoide();
+        request->send(200, "text/plain", "OK");
+    });
+
+    server.begin();
+}
+
+void loop()
+{
+    char key = keypad.getKey();
+    if (key)
+    {
+        processarTecla(key);
+    }
+
+    delay(10);
+}
+
+void processarTecla(char tecla)
+{
+    senhaDigitada += tecla;
+
+    if (!senhaSend && senhaDigitada.length() == 4)
+    {
+        verificarSenha();
+    }
+
+    acionarBuzzer();
+}
+
+void verificarSenha()
+{
+    if (senhaDigitada.length() == 0 || senhaCofre.length() == 0)
+    {
+        Serial.println("Erro: Senhas vazias.");
+        return;
+    }
+
+    senhaDigitada.trim();
+    senhaCofre.trim();
+
+    if (strcmp(senhaDigitada.c_str(), senhaCofre.c_str()) == 0)
+    {
+        Serial.println("Senha correta. Cofre aberto.");
+        cofreAberto = true;
+        digitalWrite(solenoidePin, HIGH);
+        solenoideStartTime = millis();
+    }
+    else
+    {
+        Serial.println("Senha incorreta.");
+        acionarBuzzerErro();
+    }
+
+    senhaDigitada = "";
+    enviarSenha();
+}
+
+void enviarSenha()
+{
+    senhaCofre = senhaDigitada;
+    senhaSend = true;
+    Serial.println("Nova senha confirmada: " + senhaCofre);
+}
+
+void acionarBuzzerErro()
+{
+    for (int i = 0; i < 2; ++i)
+    {
+        tone(buzzerPin, 1000, 200);
+        delay(300);
+    }
+}
+
+void acionarSolenoide()
+{
+    Serial.println("Solenoide acionado.");
+    digitalWrite(solenoidePin, HIGH);
+    delay(solenoideDuration);
+    digitalWrite(solenoidePin, LOW);
+}
+
+void acionarBuzzer()
+{
+    tone(buzzerPin, 1000, 200);
+}
