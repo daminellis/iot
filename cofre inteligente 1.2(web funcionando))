@@ -1,69 +1,103 @@
+
+//*******************************************************
+//****                                          *********
+//****         Matheus Daminelli                *********
+//****         E                                *********
+//****         Gabriel nunes                    *********
+//****                                          *********
+//****         Cofre Inteligente - IoT          *********
+//****                                          *********
+//*******************************************************
+
 #include <WiFi.h>
 #include <Keypad.h>
 
-const char *ssid = "SATC IOT";
-const char *password = "IOT2023@";
+// Variaveis de escopo global_____________________________________________
 
-// Define as pinagens do solenoide e buzzer
-const int solenoidePin = 22;
-const int buzzerPin = 23; // Substitua pela pinagem correta do seu buzzer
+    // Acesso à rede Wi-Fi
+    const char *ssid = "SATC IOT";      //Nome da rede ssid.
+    const char *password = "IOT2023@";  //Senha usada na conexão.
+    WiFiServer server(80);              //Porta 80 utilizada pelo servidor (método biblioteca WiFi.h)
 
-// Define as configurações do teclado numérico
-const uint8_t ROWS = 4;
-const uint8_t COLS = 4;
-char keys[ROWS][COLS] = {
-    {'1', '2', '3', 'A'},
-    {'4', '5', '6', 'B'},
-    {'7', '8', '9', 'C'},
-    {'*', '0', '#', 'D'}};
+    // Define as pinagens do solenoide e buzzer
+    const int solenoidePin = 22;        // Pino Solenoide
+    const int buzzerPin = 23;           // Pino Buzzer
 
-uint8_t colPins[COLS] = {16, 4, 2, 15};
-uint8_t rowPins[ROWS] = {19, 18, 5, 17};
+    // Define as configurações do teclado numérico
+    const uint8_t ROWS = 4;             // Quantas colunas tem (4 - Cuidado zero conta?)
+    const uint8_t COLS = 4;             // Quantas linhas tem (mesma ideia)
 
-Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+    // Matriz contendo par ordenado linha x coluna com tecla.
+    char keys[ROWS][COLS] = {
+        {'1', '2', '3', 'A'},
+        {'4', '5', '6', 'B'},
+        {'7', '8', '9', 'C'},
+        {'*', '0', '#', 'D'}
+    };
 
-WiFiServer server(80);
+    // Pinos das colunas e das linhas respectivamente.
+    uint8_t colPins[COLS] = {16, 4, 2, 15};
+    uint8_t rowPins[ROWS] = {19, 18, 5, 17};
 
-String senhaDigitada = "";
-String senhaCofre = ""; // Adicione a declaração da variável senhaCofre
-bool senhaSend = false;    // Flag para confirmar o envio da nova senha
-bool cofreAberto = false;  // Flag para verificar se o cofre está aberto
+    // Instanciando um teclado para utilizar (método da biblioteca Keypad.h)
+    Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-unsigned long solenoideStartTime = 0; // Variável para controlar o tempo de acionamento do solenoide
-const unsigned long solenoideDuration = 4000; // Duração em milissegundos (4 segundos)
+    // Gestão das possíveis senhas de um cofre.
+    String senhaDigitada = "";      //Senha digitada - Inicializando com "0000". 
+    String senhaCofre = "4242";     //Senha do Cofre - Default em "4242".L
+    bool senhaSend = false;         // Flag para confirmar o envio da nova senha
+    bool cofreAberto = false;       // Flag para verificar se o cofre está aberto
 
+    // Gerenciando o tempo da solenoide.
+    unsigned long solenoideStartTime = 0; // Variável para controlar o tempo de acionamento do solenoide
+    const unsigned long solenoideDuration = 4000; // Duração em milissegundos (4 segundos)
+
+// Fim do escopo global____________________________________________________________________________ 
+
+// Bloco de SETUP - Acontece primeiro______________________________________________________________
 void setup()
 {
+    // Setando o Baudrate da comunicação serial 115,2 Kbps ou 115,2 KHz.
     Serial.begin(115200);
 
-    // Inicializa o WiFi
+    // Inicializa o WiFi - Na rede ssid conecte usando password.
     WiFi.begin(ssid, password);
+    
+    // O status da conexão for diferente de WL_CONNECTED...
     while (WiFi.status() != WL_CONNECTED)
     {
+        // Segure por 1 segundo...
         delay(1000);
+        // O texto "Conectando WiFi..." no terminal.
         Serial.println("Conectando ao WiFi...");
+        // Repita o teste no While...
     }
+
+    // Caso a conexão seja estabelecida. Imprima no termianl que foi "Conectado ao WiFi".
     Serial.println("Conectado ao WiFi");
 
-    // Imprime o endereço IP atribuído ao dispositivo
+    // Ecreva também o endereço IP atribuído ao dispositivo.
     Serial.print("Endereço IP: ");
     Serial.println(WiFi.localIP());
 
     // Inicializa o solenoide
-    pinMode(solenoidePin, OUTPUT);
-    digitalWrite(solenoidePin, LOW); // Garante que o solenoide esteja desligado
+    pinMode(solenoidePin, OUTPUT);      // O pino da solenoide é uma saida.
+    digitalWrite(solenoidePin, LOW);    // Garante que o solenoide esteja desligado.
 
     // Inicializa o buzzer
-    pinMode(buzzerPin, OUTPUT);
-    digitalWrite(buzzerPin, LOW); // Garante que o buzzer esteja desligado
+    pinMode(buzzerPin, OUTPUT);         // O pino do buzzer é uma saida.
+    digitalWrite(buzzerPin, LOW);       // Deve iniciar em nivel baixo também.
 
     server.begin();
 }
 
+
+// Loop infinito__________________________________________________________________________
 void loop()
 {
-    // Lógica para lidar com a entrada do teclado numérico
+    // Uma variavel char recebe uma tecla do keypad.
     char key = keypad.getKey();
+
     if (key)
     {
         processarTecla(key);
@@ -71,6 +105,7 @@ void loop()
 
     // Lógica para lidar com solicitações HTTP
     WiFiClient client = server.available();
+
     if (client)
     {
         // Aguarde até que o cliente envie dados
@@ -85,11 +120,13 @@ void loop()
             processarSolicitacao(client);
         }
 
+        // !!! Isso está estranho parece que ele fecha a conexão depois que a primeira foi realizada.
         // Fecha a conexão
         client.stop();
+        // Experimente tirar isso ai!!! Não precisa apagar só comenta ele...
     }
     else if (senhaSend)
-    {
+    {   // Cara não entendi isso aqui. Enviar uma senha nova pelo celular não deveria abrir o cofre!!!
         // Lógica para acionar o solenoide e buzzer após receber a solicitação do cliente
         acionarSolenoide();
         acionarBuzzer();
@@ -108,8 +145,8 @@ void processarTecla(char tecla)
 {
     senhaDigitada += tecla;
 
-    // Adicione a lógica para verificar a senha a cada 4 dígitos
-    if (senhaDigitada.length() == 4)
+    // Verifica a senha apenas se a senha não foi enviada recentemente
+    if (!senhaSend && senhaDigitada.length() == 4)
     {
         verificarSenha();
     }
@@ -138,10 +175,14 @@ void processarSolicitacao(WiFiClient client)
     resposta += "<script>";
     resposta += "function enviarNovaSenha() {";
     resposta += "  var novaSenha = document.getElementById('novaSenha').value;";
-    resposta += "  var xhttp = new XMLHttpRequest();";
-    resposta += "  xhttp.open('GET', '/enviarSenha?senha=' + novaSenha, true);";
-    resposta += "  xhttp.send();";
-    resposta += "  alert('Nova senha enviada com sucesso!');";
+    resposta += "  if (novaSenha.trim() !== '') {";
+    resposta += "    var xhttp = new XMLHttpRequest();";
+    resposta += "    xhttp.open('GET', '/enviarSenha?senha=' + novaSenha, true);";
+    resposta += "    xhttp.send();";
+    resposta += "    alert('Nova senha enviada com sucesso!');";
+    resposta += "  } else {";
+    resposta += "    alert('Por favor, digite uma nova senha válida.');";
+    resposta += "  }";
     resposta += "}";
     resposta += "function acionarSolenoide() {";
     resposta += "  var xhttp = new XMLHttpRequest();";
@@ -154,30 +195,48 @@ void processarSolicitacao(WiFiClient client)
 
     // Envia a resposta para o cliente
     client.print(resposta);
+
+    // Processa a senha recebida do cliente
+    if (client.available())
+    {
+        String senhaWeb = client.readStringUntil('\r');  // "Lê a senha recebida" até o caractere de retorno de carro
+        senhaWeb.trim();                                 // Remove espaços em branco extras.
+        enviarSenha(senhaWeb);                           // Chama o metodo enviar senha.
+        Serial.println("Senha recebida: " + senhaCofre); // Escreve no prompt se a senhaCofre foi alterada.
+    }
 }
 
 void verificarSenha()
 {
-    if (senhaDigitada == senhaCofre)
+    // Certifica-se de que as senhas não estão vazias
+    if (senhaDigitada.length() == 0 || senhaCofre.length() == 0)
     {
-        Serial.println("Senha correta. Cofre aberto.");
-        cofreAberto = true;
-        digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
-        solenoideStartTime = millis();     // Registra o tempo de início do acionamento do solenoide
-    }
-    else
-    {
-        Serial.println("Senha incorreta.");
-        acionarBuzzerErro(); // Adiciona uma função para acionar o buzzer de erro
+        Serial.println("Erro: Senhas vazias.");
+        return;
     }
 
+    // Remove espaços em branco extras das senhas
+    senhaDigitada.trim();
+    senhaCofre.trim();
+
+    // Usa strcmp para comparar as senhas
+    if (strcmp(senhaDigitada.c_str(), senhaCofre.c_str()) == 0)
+    {
+        solenoideStartTime = millis();      // Registra o tempo de início do acionamento do solenoide
+        acionarSolenoide();                 // Usando o método para abrir o cofre.
+        Serial.println("Senha correta. Cofre aberto."); //Texto do prompt (Log).
+    }
+    else{
+    Serial.println("Senha incorreta.");
+    acionarBuzzerErro(); // Adiciona uma função para acionar o buzzer de erro
+    }
     senhaDigitada = "";
-    enviarSenha();  // Adicione esta linha para enviar a senha correta
 }
 
-void enviarSenha()
+// Função que grava a nova senha na variavel global.
+void enviarSenha(String argumento)
 {
-    senhaCofre = senhaDigitada;
+    senhaCofre = argumento;
     senhaSend = true;
     Serial.println("Nova senha confirmada: " + senhaCofre);
 }
@@ -194,14 +253,15 @@ void acionarBuzzerErro()
 
 void acionarSolenoide()
 {
-    Serial.println("Solenoide acionado.");
-    digitalWrite(solenoidePin, HIGH); // Aciona o solenoide
-    delay(solenoideDuration);          // Mantém o solenoide acionado pelo tempo definido
-    digitalWrite(solenoidePin, LOW);  // Desliga o solenoide
+    cofreAberto = true;                     // Marcando a variável de controle como verdadeira.
+    Serial.println("Solenoide acionado.");  // Texto do prompt
+    digitalWrite(solenoidePin, HIGH);       // Aciona o solenoide
+    delay(solenoideDuration);               // Mantém o solenoide acionado pelo tempo definido
+    digitalWrite(solenoidePin, LOW);        // Desliga o solenoide
+    cofreAberto = false;                    // Marcando a variável de controle como falso.
 }
 
 void acionarBuzzer()
 {
     tone(buzzerPin, 1000, 200);
 }
-
