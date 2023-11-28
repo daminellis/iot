@@ -44,7 +44,7 @@
 
     // Gestão das possíveis senhas de um cofre.
     String senhaDigitada = "";      //Senha digitada - Inicializando com "0000". 
-    String senhaCofre = "4242";     //Senha do Cofre - Default em "4242".L
+    String senhaCofre = "1111";     //Senha do Cofre - Default em "4242".L
     bool senhaSend = false;         // Flag para confirmar o envio da nova senha
     bool cofreAberto = false;       // Flag para verificar se o cofre está aberto
 
@@ -95,50 +95,35 @@ void setup()
 // Loop infinito__________________________________________________________________________
 void loop()
 {
-    // Uma variavel char recebe uma tecla do keypad.
+    // Uma variável char recebe uma tecla do keypad.
     char key = keypad.getKey();
 
-    if (key)
+    // Lógica para lidar com solicitações HTTP apenas se não houver tecla pressionada
+    if (!key)
     {
+        WiFiClient client = server.available();
+
+        if (client)
+        {
+            // Aguarde até que o cliente envie dados
+            while (client.connected() && !client.available())
+            {
+                delay(1);
+            }
+            // Processa a solicitação do cliente, somente se houver.
+            if (client.available())
+            {
+                processarSolicitacao(client);
+                Serial.println("Senha do Cofre: " + senhaCofre);
+            }           
+            client.stop();
+        }
+    }
+    else
+    {
+        // Processa tecla apenas se não houver cliente disponível
         processarTecla(key);
-    }
-
-    // Lógica para lidar com solicitações HTTP
-    WiFiClient client = server.available();
-
-    if (client)
-    {
-        // Aguarde até que o cliente envie dados
-        while (client.connected() && !client.available())
-        {
-            delay(1);
-        }
-
-        // Processa a solicitação do cliente, se houver
-        if (client.available())
-        {
-            processarSolicitacao(client);
-        }
-
-        // !!! Isso está estranho parece que ele fecha a conexão depois que a primeira foi realizada.
-        // Fecha a conexão
-        client.stop();
-        // Experimente tirar isso ai!!! Não precisa apagar só comenta ele...
-    }
-    else if (senhaSend)
-    {   // Cara não entendi isso aqui. Enviar uma senha nova pelo celular não deveria abrir o cofre!!!
-        // Lógica para acionar o solenoide e buzzer após receber a solicitação do cliente
-        acionarSolenoide();
-        acionarBuzzer();
-        senhaSend = false; // Reinicia a flag de senha enviada
-    }
-
-    // Lógica para desligar o solenoide após o tempo definido
-    if (cofreAberto && millis() - solenoideStartTime >= solenoideDuration)
-    {
-        digitalWrite(solenoidePin, LOW); // Desliga o solenoide
-        cofreAberto = false;
-    }
+  }
 }
 
 void processarTecla(char tecla)
@@ -146,7 +131,7 @@ void processarTecla(char tecla)
     senhaDigitada += tecla;
 
     // Verifica a senha apenas se a senha não foi enviada recentemente
-    if (!senhaSend && senhaDigitada.length() == 4)
+    if (senhaDigitada.length() == 4)
     {
         verificarSenha();
     }
@@ -177,8 +162,9 @@ void processarSolicitacao(WiFiClient client)
     resposta += "  var novaSenha = document.getElementById('novaSenha').value;";
     resposta += "  if (novaSenha.trim() !== '') {";
     resposta += "    var xhttp = new XMLHttpRequest();";
-    resposta += "    xhttp.open('GET', '/enviarSenha?senha=' + novaSenha, true);";
-    resposta += "    xhttp.send();";
+    resposta += "    xhttp.open('POST', '/enviarSenha', true);";
+    resposta += "    xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');";
+    resposta += "    xhttp.send('novaSenha=' + novaSenha);";
     resposta += "    alert('Nova senha enviada com sucesso!');";
     resposta += "  } else {";
     resposta += "    alert('Por favor, digite uma nova senha válida.');";
@@ -186,8 +172,7 @@ void processarSolicitacao(WiFiClient client)
     resposta += "}";
     resposta += "function acionarSolenoide() {";
     resposta += "  var xhttp = new XMLHttpRequest();";
-    resposta += "  xhttp.open('GET', '/acionarSolenoide', true);";
-    resposta += "  xhttp.send();";
+    resposta += "  xhttp.open('POST', '/acionarSolenoide', true);";
     resposta += "}";
     resposta += "</script>";
 
@@ -196,13 +181,28 @@ void processarSolicitacao(WiFiClient client)
     // Envia a resposta para o cliente
     client.print(resposta);
 
-    // Processa a senha recebida do cliente
+    // Processa a solicitação POST
     if (client.available())
     {
-        String senhaWeb = client.readStringUntil('\r');  // "Lê a senha recebida" até o caractere de retorno de carro
-        senhaWeb.trim();                                 // Remove espaços em branco extras.
-        enviarSenha(senhaWeb);                           // Chama o metodo enviar senha.
-        Serial.println("Senha recebida: " + senhaCofre); // Escreve no prompt se a senhaCofre foi alterada.
+        String request = client.readStringUntil('\r');  // Lê a solicitação até o caractere de retorno de carro
+
+        if (request.startsWith("POST /acionarSolenoide"))
+        {
+            // Se a solicitação for para /acionarSolenoide, chama a função acionarSolenoide
+            acionarSolenoide();
+        }
+        else if (request.startsWith("POST /enviarSenha"))
+        {
+            // Se a solicitação for para /enviarSenha, procura pelo final do cabeçalho e lê o corpo da solicitação
+            while (client.available() && client.read() != -1);  // Ignora o restante do cabeçalho
+
+            String body = client.readStringUntil('\r');  // Lê o corpo da solicitação até o caractere de retorno de carro
+            body.trim();  // Remove espaços em branco extras
+            Serial.println("Conteúdo do corpo da solicitação 'novaSenha' recebido: " + body);
+
+            // Lógica para enviar senha
+            enviarSenha(body);
+        }
     }
 }
 
