@@ -23,8 +23,8 @@
     const int buzzerPin = 23;           // Pino Buzzer
 
     // Define as configurações do teclado numérico
-    const uint8_t ROWS = 4;             // Quantas colunas tem (4 - Cuidado zero conta?)
-    const uint8_t COLS = 4;             // Quantas linhas tem (mesma ideia)
+    const uint8_t ROWS = 4;             // Quantas colunas tem (4)
+    const uint8_t COLS = 4;             // Quantas linhas tem (4)
 
     // Matriz contendo par ordenado linha x coluna com tecla.
     char keys[ROWS][COLS] = {
@@ -43,7 +43,7 @@
 
     // Gestão das possíveis senhas de um cofre.
     String senhaDigitada = "";      //Senha digitada - Inicializando com "". 
-    String senhaCofre = "4242";     //Senha do Cofre - Default em "4242".L
+    String senhaCofre = "4242";     //Senha do Cofre - Default em "4242"
     bool senhaSend = false;         // Flag para confirmar o envio da nova senha
     bool cofreAberto = false;       // Flag para verificar se o cofre está aberto
 
