@@ -1,11 +1,10 @@
-
 //*******************************************************
 //****                                          *********
 //****         Matheus Daminelli                *********
 //****                                          *********
 //****         Cofre Inteligente - IoT          *********
 //****                                          *********
-//****                       22/11/2023         *********
+//****         2/11/2023 && 30/11/2023          *********
 //****                                          *********
 //*******************************************************
 
@@ -15,8 +14,8 @@
 // Variaveis de escopo global_____________________________________________
 
     // Acesso à rede Wi-Fi
-    const char *ssid = "iPodc_2.4";      //Nome da rede ssid.
-    const char *password = "etnethome";  //Senha usada na conexão.
+    const char *ssid = "SATC IOT";      //Nome da rede ssid.
+    const char *password = "IOT2023@";  //Senha usada na conexão.
     WiFiServer server(80);              //Porta 80 utilizada pelo servidor (método biblioteca WiFi.h)
 
     // Define as pinagens do solenoide e buzzer
